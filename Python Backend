@@ -1,0 +1,62 @@
+
+
+import requests
+from bs4 import BeautifulSoup
+from datetime import datetime
+from waitress import serve
+from flask import Flask, jsonify
+from flask_cors import CORS
+import socket
+data_lists = []
+app = Flask(__name__)
+CORS(app)
+hostname = socket.gethostname()
+IPAddr = socket.gethostbyname(hostname)
+
+
+
+def scrape_menu(base_url):
+    # Send an HTTP request to the website
+    current_date = datetime.now().strftime('%Y-%m-%d')
+    url = f"{base_url}{current_date}"
+    response = requests.get(url)
+
+    # Check if the request was successful (status code 200)
+    if response.status_code == 200:
+        # Parse the HTML content using BeautifulSoup
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        # Find all <div> elements with the class 'meal-title dinner'
+        dinner_menu_items = soup.find_all('div', class_='meal-title dinner')
+        lunch_menu_items = soup.find_all('div', class_='meal-title lunch')
+        # Extract and print the text content of each menu item
+        din_menu_item_names = [item.text.strip() for item in dinner_menu_items]
+        lun_menu_item_names = [item2.text.strip() for item2 in lunch_menu_items]
+        # Print the extracted menu item names or do further processing
+        data_lists.append(lun_menu_item_names)
+        data_lists.append(din_menu_item_names)
+    else:
+        print(f"Failed to retrieve the page. Status code: {response.status_code}")
+
+
+@app.route('/api/data', methods=['GET'])
+def get_data():
+    return jsonify(data_lists)
+
+
+if __name__ == "__main__":
+    # Replace the URL with the one you provided
+    BrodyUrl = 'https://eatatstate.msu.edu/menu/Brody%20Square/all/'
+    AkersUrl = 'https://eatatstate.msu.edu/menu/The%20Edge%20at%20Akers/all/'
+    CaseUrl = 'https://eatatstate.msu.edu/menu/South%20Pointe%20at%20Case/all/'
+    ShawUrl = 'https://eatatstate.msu.edu/menu/The%20Vista%20at%20Shaw/all/'
+    SnyPhiUrl = 'https://eatatstate.msu.edu/menu/The%20Gallery%20at%20Snyder%20Phillips/all/'
+    IP = socket.gethostbyname(hostname)
+    print("Your Computer Name is:" + hostname)
+    print("Your Computer IP Address is:" + IPAddr)
+    scrape_menu(BrodyUrl)
+    scrape_menu(AkersUrl)
+    scrape_menu(CaseUrl)
+    scrape_menu(ShawUrl)
+    scrape_menu(SnyPhiUrl)
+    serve(app, host=IPAddr, port=5000)
